@@ -330,9 +330,11 @@ var p = Tween.prototype = new createjs.EventDispatcher();
 		var target = tween._target;
 		var tweens = Tween._tweens;
 		if (value) {
+			tween.startedAt = createjs.Ticker.getTime();
 			// TODO: this approach might fail if a dev is using sealed objects in ES5
 			if (target) { target.tweenjs_count = target.tweenjs_count ? target.tweenjs_count+1 : 1; }
 			tweens.push(tween);
+			if (Tween.onRegistered) { Tween.onRegistered(tween); }
 			if (!Tween._inited && createjs.Ticker) { createjs.Ticker.addEventListener("tick", Tween); Tween._inited = true; }
 		} else {
 			if (target) { target.tweenjs_count--; }
@@ -887,6 +889,7 @@ var p = Tween.prototype = new createjs.EventDispatcher();
 			this._steps.push(o);
 			o.t = this.duration;
 			this.duration += o.d;
+			if (Tween.onStepAdded) { Tween.onStepAdded(this, o); }
 		}
 		return this;
 	};

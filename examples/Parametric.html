@@ -1,0 +1,124 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Pangaea Demo</title>
+    <style>
+      #stage {
+        border: 1px solid black;
+        margin: 0 auto;
+        display: block;
+      }
+    </style>
+    
+    <script type="text/javascript" src="./assets/easeljs-NEXT.min.js"></script>
+
+    <!-- Note: All core TweenJS classes are listed here: -->
+    <script type="text/javascript" src="../src/createjs/events/Event.js"></script>
+    <script type="text/javascript" src="../src/createjs/events/EventDispatcher.js"></script>
+    <script type="text/javascript" src="../src/tweenjs/Tween.js"></script>
+    <script type="text/javascript" src="../src/tweenjs/Ease.js"></script>
+    <script type="text/javascript" src="../src/tweenjs/ParametricPlugin.js"></script>
+    <script type="text/javascript" src="../src/tweenjs/Pangaea.js"></script>
+  </head>
+  <body>
+    <canvas id="stage" width="800px" height="600px"></canvas>
+    <script>
+      var MS_PER_PX = 50;
+
+      var stage = new createjs.Stage('stage');
+
+      var pg = new Pangaea();
+      createjs.Tween.onStepAdded = ParametricPlugin.onStepAdded;
+
+      var buffered = new createjs.Shape();
+      buffered.graphics.beginFill('gray').drawRect(0, 0, 1, 5);
+      buffered.x = 0;
+      buffered.y = 595;
+      buffered.scaleX = 0.0;
+
+      var playhead = new createjs.Shape();
+      playhead.graphics.beginFill('blue').drawCircle(0.0, 0, 10);
+      playhead.x = 0;
+      playhead.y = 595;
+
+      var circles = [];
+
+      function makeCircle() {
+        var randomColor = Math.floor(Math.random() * Math.pow(2, 24)).toString(16);
+        var randomSize = 5.0 + Math.random() * 50.0;
+        var circle = new createjs.Shape();
+        circle.graphics.beginFill('#' + randomColor).drawCircle(randomSize, randomSize, randomSize);
+        circle.x = Math.random() * 800.0;
+        circle.y = Math.random() * 600.0;
+        addRandomTween(circle);
+        circles.push(circle);
+        return circle;
+      };
+
+      function addRandomTween(circle) {
+        var duration = 1000.0 + Math.random() * 800.0;
+        var xloc = Math.random() * 800.0;
+        var yloc = Math.random() * 600.0;
+        var alphaval = 0.25 + Math.random() * 0.75;
+        createjs.Tween.get(circle).to({x: xloc, y: yloc, alpha: alphaval}, duration);
+        setTimeout(function() {
+          addRandomTween(circle);
+        }, duration + 100.0);
+      };
+
+      for (var i = 0; i < 30; i++) {
+        stage.addChild(makeCircle());
+      }
+
+      stage.addChild(buffered);
+      stage.addChild(playhead);
+
+      createjs.Ticker.setFPS(60);
+      createjs.Ticker.addEventListener('tick', update);
+
+      function update(e) {
+        pg.tick(e.delta);
+
+        buffered.scaleX = pg.getClock() / MS_PER_PX;
+
+        if (!downOnPlayhead) {
+          playhead.x = pg.getPlayhead() / MS_PER_PX;
+        }
+
+        if (!pg.isSynced()) {
+          for (var i = 0; i < circles.length; i++) {
+            ParametricPlugin.transform(circles[i], pg.getPlayhead());
+          }
+        }
+
+        stage.update();
+      }
+
+      playhead.addEventListener('mousedown', playheadDown);
+      playhead.addEventListener('pressup', playheadUp);
+      playhead.addEventListener('pressmove', playheadMove);
+
+      var downOnPlayhead = false;
+
+      function playheadDown(e) {
+        downOnPlayhead = true;
+        pg.pause();
+        createjs.Tween.synced = false;
+        pg.setPlayhead(playhead.x * MS_PER_PX);
+      }
+
+      function playheadUp(e) {
+        downOnPlayhead = false;
+        pg.resume();
+      }
+
+      function playheadMove(e) {
+        if (downOnPlayhead) {
+          playhead.x = e.stageX;
+          playhead.x = Math.min(playhead.x, buffered.scaleX);
+          pg.setPlayhead(playhead.x * MS_PER_PX);
+        }
+      }
+    </script>
+  </body>
+</html>

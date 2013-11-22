@@ -180,6 +180,8 @@ var p = Tween.prototype = new createjs.EventDispatcher();
 	 */
 	Tween._plugins = {};
 
+	Tween.synced = true;
+
 	/**
 	 * Returns a new tween instance. This is functionally identical to using "new Tween(...)", but looks cleaner
 	 * with the chained syntax of TweenJS.
@@ -762,6 +764,10 @@ var p = Tween.prototype = new createjs.EventDispatcher();
 	 * @protected
 	 */
 	p._updateTargetProps = function(step, ratio) {
+		if (!Tween.synced) {
+			return;
+		}
+
 		var p0,p1,v,v0,v1,arr;
 		if (!step && ratio == 1) {
 			// GDS: when does this run? Just at the very end? Shouldn't.
